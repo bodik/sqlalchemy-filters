@@ -1,5 +1,6 @@
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.inspection import inspect
+from sqlalchemy.orm.mapper import Mapper
 
 from .exceptions import BadQuery, FieldNotFound, BadSpec
 
@@ -30,6 +31,11 @@ def get_query_models(query):
         A dictionary with all the models included in the query.
     """
     models = [col_desc['entity'] for col_desc in query.column_descriptions]
+    if query._select_from_entity and (query._select_from_entity not in models):
+        if isinstance(query._select_from_entity, Mapper):  # pragma: no cover
+            models.append(query._select_from_entity.class_)
+        else:  # pragma: no cover
+            models.append(query._select_from_entity)
     models.extend(mapper.class_ for mapper in query._join_entities)
     return {model.__name__: model for model in models}
 

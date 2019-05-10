@@ -50,6 +50,8 @@ class Operator(object):
         'ilike': lambda f, a: f.ilike(a),
         'in': lambda f, a: f.in_(a),
         'not_in': lambda f, a: ~f.in_(a),
+        'any': lambda f, a: f.any(a),
+        'not_all': lambda f, a: ~f.all(a),
     }
 
     def __init__(self, operator=None):

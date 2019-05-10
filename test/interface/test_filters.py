@@ -12,7 +12,12 @@ from sqlalchemy_filters.exceptions import (
     BadFilterFormat, BadSpec, FieldNotFound
 )
 
-from test.models import Foo, Bar, Qux
+from test.models import Foo, Bar, Qux, Corge
+
+
+ARRAY_NOT_SUPPORTED = (
+    "ARRAY type and operators supported only by PostgreSQL"
+)
 
 
 STRING_DATE_TIME_NOT_SUPPORTED = (
@@ -67,6 +72,15 @@ def multiple_quxs_inserted(session):
     )
     session.add_all([qux_1, qux_2, qux_3, qux_4])
     session.commit()
+
+
+@pytest.fixture
+def multiple_corges_inserted(session, is_postgresql):
+    if is_postgresql:
+        corge_1 = Corge(id=1, name='name_1', tags=['foo'])
+        corge_2 = Corge(id=2, name='name_2', tags=['bar', 'baz'])
+        session.add_all([corge_1, corge_2])
+        session.commit()
 
 
 class TestFiltersNotApplied:
@@ -1151,3 +1165,36 @@ class TestApplyBooleanFunctions:
 
         assert len(result) == 1
         assert result[0].id == 3
+
+
+class TestApplyArrayFilters:
+
+    @pytest.mark.usefixtures('multiple_corges_inserted')
+    def test_value_in_array(self, session, is_postgresql):
+        if not is_postgresql:
+            pytest.skip(ARRAY_NOT_SUPPORTED)
+
+        query = session.query(Corge)
+        filters = [{'field': 'tags', 'op': 'any', 'value': 'foo'}]
+
+        filtered_query = apply_filters(query, filters)
+        result = filtered_query.all()
+
+        assert len(result) == 1
+        assert result[0].id == 1
+        assert result[0].tags == ['foo']
+
+    @pytest.mark.usefixtures('multiple_corges_inserted')
+    def test_value_not_in_array(self, session, is_postgresql):
+        if not is_postgresql:
+            pytest.skip(ARRAY_NOT_SUPPORTED)
+
+        query = session.query(Corge)
+        filters = [{'field': 'tags', 'op': 'not_all', 'value': 'foo'}]
+
+        filtered_query = apply_filters(query, filters)
+        result = filtered_query.all()
+
+        assert len(result) == 1
+        assert result[0].id == 2
+        assert result[0].tags == ['bar', 'baz']

@@ -303,6 +303,14 @@ This is the list of operators that can be used:
 - ``ilike``
 - ``in``
 - ``not_in``
+- ``any``
+- ``not_all``
+
+any / not_all
+^^^^^^^^^^^^^
+
+PostgreSQL specific operators can be used to filter queries based on presence
+(``any``) or absence (``not_all``) value in model attribute of ARRAY type.
 
 Boolean Functions
 ^^^^^^^^^^^^^^^^^
